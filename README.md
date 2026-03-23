@@ -1,173 +1,241 @@
-# An MCP-based Chatbot
+# 机械AI仿生花 - Mechanical AI Bionic Flower
 
-(English | [中文](README_zh.md) | [日本語](README_ja.md))
+> 基于 xiaozhi-esp32 框架的毕业设计项目 | Graduation Design Project
 
-## Introduction
+## 项目简介
 
-👉 [Human: Give AI a camera vs AI: Instantly finds out the owner hasn't washed hair for three days【bilibili】](https://www.bilibili.com/video/BV1bpjgzKEhd/)
+这是一个具有AI语音交互能力的机械仿生花项目。花朵可以根据AI对话状态自动开合，配合LED灯光效果，创造出富有生命力的交互体验。
 
-👉 [Handcraft your AI girlfriend, beginner's guide【bilibili】](https://www.bilibili.com/video/BV1XnmFYLEJN/)
+**核心功能**：
+- AI语音对话交互
+- 花朵自动开合动画
+- WS2812 RGB灯带氛围效果
+- 3个物理按钮交互
+- MCP协议智能设备控制
 
-As a voice interaction entry, the XiaoZhi AI chatbot leverages the AI capabilities of large models like Qwen / DeepSeek, and achieves multi-terminal control via the MCP protocol.
+---
 
-<img src="docs/mcp-based-graph.jpg" alt="Control everything via MCP" width="320">
+## 制作想法
 
-## Version Notes
+### 设计理念
 
-The current v2 version is incompatible with the v1 partition table, so it is not possible to upgrade from v1 to v2 via OTA. For partition table details, see [partitions/v2/README.md](partitions/v2/README.md).
+本项目试图探索"人机交互"的新形式——让AI不只是冰冷的屏幕对话，而是赋予它一个可以触摸、可以感知的物理实体。
 
-All hardware running v1 can be upgraded to v2 by manually flashing the firmware.
+**灵感来源**：
+- 花朵的开合如同呼吸，具有自然的生命韵律
+- AI"苏醒"时花朵绽放，"休眠"时花朵合拢
+- 语音对话时花朵轻轻摇摆，仿佛在倾听和思考
 
-The stable version of v1 is 1.9.2. You can switch to v1 by running `git checkout v1`. The v1 branch will be maintained until February 2026.
+### 工作流程
 
-### Features Implemented
+```
+┌─────────────────────────────────────────────────────────┐
+│                      状态流转                            │
+├─────────────────────────────────────────────────────────┤
+│                                                         │
+│   [待命] ──唤醒词──> [聆听] ──识别完成──> [思考]        │
+│     │                  │                  │             │
+│   花朵合拢          花朵绽放            花朵摇摆         │
+│   灯光常亮          灯光呼吸            灯光闪烁         │
+│     │                  │                  │             │
+│     └────────────────<┴────<──对话结束──<┘             │
+│                                                         │
+└─────────────────────────────────────────────────────────┘
+```
 
-- Wi-Fi / ML307 Cat.1 4G
-- Offline voice wake-up [ESP-SR](https://github.com/espressif/esp-sr)
-- Supports two communication protocols ([Websocket](docs/websocket.md) or MQTT+UDP)
-- Uses OPUS audio codec
-- Voice interaction based on streaming ASR + LLM + TTS architecture
-- Speaker recognition, identifies the current speaker [3D Speaker](https://github.com/modelscope/3D-Speaker)
-- OLED / LCD display, supports emoji display
-- Battery display and power management
-- Multi-language support (Chinese, English, Japanese)
-- Supports ESP32-C3, ESP32-S3, ESP32-P4 chip platforms
-- Device-side MCP for device control (Speaker, LED, Servo, GPIO, etc.)
-- Cloud-side MCP to extend large model capabilities (smart home control, PC desktop operation, knowledge search, email, etc.)
-- Customizable wake words, fonts, emojis, and chat backgrounds with online web-based editing ([Custom Assets Generator](https://github.com/78/xiaozhi-assets-generator))
+---
 
-## Hardware
+## 目录结构
 
-### Breadboard DIY Practice
+```
+AI---ESP32C3/
+│
+├── main/
+│   ├── boards/
+│   │   ├── mechanical-flower/     # ← 本项目核心代码
+│   │   │   ├── config.h           # 引脚配置
+│   │   │   ├── config.json        # 板卡配置
+│   │   │   ├── mechanical_flower_board.cc      # 板卡初始化
+│   │   │   ├── mechanical_flower_controller.*  # 花朵控制器
+│   │   │   ├── mechanical_flower_audio_codec.* # 音频编解码
+│   │   │   ├── servo_controller.*              # 舵机控制
+│   │   │   ├── flower_led_controller.*         # LED控制
+│   │   │   └── flower_led.h       # LED驱动
+│   │   │
+│   │   └── common/                # 公共板卡依赖
+│   │
+│   ├── audio/                     # 音频处理模块
+│   ├── display/                   # 显示模块
+│   ├── led/                       # LED基础驱动
+│   └── protocols/                 # 通信协议
+│
+├── stl/                           # ← 3D打印模型文件
+│   ├── 花瓣.stl                   # 花瓣部件
+│   ├── 树叶.stl                   # 叶子部件
+│   ├── 花茎与花盆盖.stl           # 花茎和花盆盖
+│   ├── 花盆内部.stl               # 花盆内部结构
+│   ├── 齿轮.stl                   # 齿轮传动
+│   ├── 齿条.stl                   # 齿条传动
+│   ├── 连杆1.stl                  # 连杆组件1
+│   └── 连杆2.stl                  # 连杆组件2
+│
+├── docs/                          # 项目文档
+├── LICENSE                        # MIT协议 + 贡献者声明
+└── CMakeLists.txt                 # 构建配置
+```
 
-See the Feishu document tutorial:
+---
 
-👉 ["XiaoZhi AI Chatbot Encyclopedia"](https://ccnphfhqs21z.feishu.cn/wiki/F5krwD16viZoF0kKkvDcrZNYnhb?from=from_copylink)
+## 代码路径说明
 
-Breadboard demo:
+### 核心控制文件
 
-![Breadboard Demo](docs/v1/wiring2.jpg)
+| 文件 | 功能 |
+|------|------|
+| `main/boards/mechanical-flower/config.h` | GPIO引脚配置、舵机角度参数 |
+| `main/boards/mechanical-flower/mechanical_flower_controller.cc` | 花朵动作控制核心逻辑 |
+| `main/boards/mechanical-flower/servo_controller.cc` | SG90舵机PWM驱动 |
+| `main/boards/mechanical-flower/flower_led_controller.cc` | WS2812灯带控制 |
 
-### Supports 70+ Open Source Hardware (Partial List)
+### 关键功能
 
-- <a href="https://oshwhub.com/li-chuang-kai-fa-ban/li-chuang-shi-zhan-pai-esp32-s3-kai-fa-ban" target="_blank" title="LiChuang ESP32-S3 Development Board">LiChuang ESP32-S3 Development Board</a>
-- <a href="https://github.com/espressif/esp-box" target="_blank" title="Espressif ESP32-S3-BOX3">Espressif ESP32-S3-BOX3</a>
-- <a href="https://docs.m5stack.com/zh_CN/core/CoreS3" target="_blank" title="M5Stack CoreS3">M5Stack CoreS3</a>
-- <a href="https://docs.m5stack.com/en/atom/Atomic%20Echo%20Base" target="_blank" title="AtomS3R + Echo Base">M5Stack AtomS3R + Echo Base</a>
-- <a href="https://gf.bilibili.com/item/detail/1108782064" target="_blank" title="Magic Button 2.4">Magic Button 2.4</a>
-- <a href="https://www.waveshare.net/shop/ESP32-S3-Touch-AMOLED-1.8.htm" target="_blank" title="Waveshare ESP32-S3-Touch-AMOLED-1.8">Waveshare ESP32-S3-Touch-AMOLED-1.8</a>
-- <a href="https://github.com/Xinyuan-LilyGO/T-Circle-S3" target="_blank" title="LILYGO T-Circle-S3">LILYGO T-Circle-S3</a>
-- <a href="https://oshwhub.com/tenclass01/xmini_c3" target="_blank" title="XiaGe Mini C3">XiaGe Mini C3</a>
-- <a href="https://oshwhub.com/movecall/cuican-ai-pendant-lights-up-y" target="_blank" title="Movecall CuiCan ESP32S3">CuiCan AI Pendant</a>
-- <a href="https://github.com/WMnologo/xingzhi-ai" target="_blank" title="WMnologo-Xingzhi-1.54">WMnologo-Xingzhi-1.54TFT</a>
-- <a href="https://www.seeedstudio.com/SenseCAP-Watcher-W1-A-p-5979.html" target="_blank" title="SenseCAP Watcher">SenseCAP Watcher</a>
-- <a href="https://www.bilibili.com/video/BV1BHJtz6E2S/" target="_blank" title="ESP-HI Low Cost Robot Dog">ESP-HI Low Cost Robot Dog</a>
+**1. 花朵动作控制** (`mechanical_flower_controller.cc`)
+- `OpenFlower()` - 花朵绽放
+- `CloseFlower()` - 花朵合拢
+- `Wiggle()` - 花朵摇摆动画
+- `WaterFlower()` - 浇水动作
 
-<div style="display: flex; justify-content: space-between;">
-  <a href="docs/v1/lichuang-s3.jpg" target="_blank" title="LiChuang ESP32-S3 Development Board">
-    <img src="docs/v1/lichuang-s3.jpg" width="240" />
-  </a>
-  <a href="docs/v1/espbox3.jpg" target="_blank" title="Espressif ESP32-S3-BOX3">
-    <img src="docs/v1/espbox3.jpg" width="240" />
-  </a>
-  <a href="docs/v1/m5cores3.jpg" target="_blank" title="M5Stack CoreS3">
-    <img src="docs/v1/m5cores3.jpg" width="240" />
-  </a>
-  <a href="docs/v1/atoms3r.jpg" target="_blank" title="AtomS3R + Echo Base">
-    <img src="docs/v1/atoms3r.jpg" width="240" />
-  </a>
-  <a href="docs/v1/magiclick.jpg" target="_blank" title="Magic Button 2.4">
-    <img src="docs/v1/magiclick.jpg" width="240" />
-  </a>
-  <a href="docs/v1/waveshare.jpg" target="_blank" title="Waveshare ESP32-S3-Touch-AMOLED-1.8">
-    <img src="docs/v1/waveshare.jpg" width="240" />
-  </a>
-  <a href="docs/v1/lilygo-t-circle-s3.jpg" target="_blank" title="LILYGO T-Circle-S3">
-    <img src="docs/v1/lilygo-t-circle-s3.jpg" width="240" />
-  </a>
-  <a href="docs/v1/xmini-c3.jpg" target="_blank" title="XiaGe Mini C3">
-    <img src="docs/v1/xmini-c3.jpg" width="240" />
-  </a>
-  <a href="docs/v1/movecall-cuican-esp32s3.jpg" target="_blank" title="CuiCan">
-    <img src="docs/v1/movecall-cuican-esp32s3.jpg" width="240" />
-  </a>
-  <a href="docs/v1/wmnologo_xingzhi_1.54.jpg" target="_blank" title="WMnologo-Xingzhi-1.54">
-    <img src="docs/v1/wmnologo_xingzhi_1.54.jpg" width="240" />
-  </a>
-  <a href="docs/v1/sensecap_watcher.jpg" target="_blank" title="SenseCAP Watcher">
-    <img src="docs/v1/sensecap_watcher.jpg" width="240" />
-  </a>
-  <a href="docs/v1/esp-hi.jpg" target="_blank" title="ESP-HI Low Cost Robot Dog">
-    <img src="docs/v1/esp-hi.jpg" width="240" />
-  </a>
-</div>
+**2. 舵机控制** (`servo_controller.cc`)
+- 50Hz PWM信号生成
+- 角度范围：0° ~ 48°
+- 平滑移动动画
 
-## Software
+**3. LED控制** (`flower_led_controller.cc`)
+- 颜色设置
+- 呼吸效果
+- 预设颜色方案
 
-### Firmware Flashing
+---
 
-For beginners, it is recommended to use the firmware that can be flashed without setting up a development environment.
+## 3D模型说明
 
-The firmware connects to the official [xiaozhi.me](https://xiaozhi.me) server by default. Personal users can register an account to use the Qwen real-time model for free.
+### 模型文件位置
+```
+stl/
+├── 花瓣.stl          # 3D打印 - 花瓣主体
+├── 树叶.stl          # 3D打印 - 装饰叶子
+├── 花茎与花盆盖.stl  # 3D打印 - 支撑结构
+├── 花盆内部.stl      # 3D打印 - 电子元件安装座
+├── 齿轮.stl         # 传动机构
+├── 齿条.stl         # 传动机构
+├── 连杆1.stl        # 花瓣驱动连杆
+└── 连杆2.stl        # 花瓣驱动连杆
+```
 
-👉 [Beginner's Firmware Flashing Guide](https://ccnphfhqs21z.feishu.cn/wiki/Zpz4wXBtdimBrLk25WdcXzxcnNS)
+### 机械结构原理
 
-### Development Environment
+```
+                    ┌──────────┐
+                    │  花瓣    │
+                    └────┬─────┘
+                         │ 连杆
+              ┌──────────┴──────────┐
+              │        齿轮         │
+              └──────────┬──────────┘
+                         │
+              ┌──────────┴──────────┐
+              │        齿条         │←── 舵机驱动
+              └─────────────────────┘
+                         │
+              ┌──────────┴──────────┐
+              │       花茎          │
+              └─────────────────────┘
+```
 
-- Cursor or VSCode
-- Install ESP-IDF plugin, select SDK version 5.4 or above
-- Linux is better than Windows for faster compilation and fewer driver issues
-- This project uses Google C++ code style, please ensure compliance when submitting code
+舵机通过齿轮齿条机构驱动连杆，连杆带动花瓣实现开合运动。
 
-### Developer Documentation
+---
 
-- [Custom Board Guide](docs/custom-board.md) - Learn how to create custom boards for XiaoZhi AI
-- [MCP Protocol IoT Control Usage](docs/mcp-usage.md) - Learn how to control IoT devices via MCP protocol
-- [MCP Protocol Interaction Flow](docs/mcp-protocol.md) - Device-side MCP protocol implementation
-- [MQTT + UDP Hybrid Communication Protocol Document](docs/mqtt-udp.md)
-- [A detailed WebSocket communication protocol document](docs/websocket.md)
+## 硬件连接
 
-## Large Model Configuration
+### 引脚分配表 (ESP32-C3)
 
-If you already have a XiaoZhi AI chatbot device and have connected to the official server, you can log in to the [xiaozhi.me](https://xiaozhi.me) console for configuration.
+| 模块 | ESP32引脚 | 模块引脚 | 说明 |
+|------|----------|---------|------|
+| **INMP441麦克风** | | | |
+| | GPIO3 | BCLK/SCK | I2S位时钟 |
+| | GPIO2 | LRCLK/WS | I2S左右声道时钟 |
+| | GPIO10 | DIN/SD | I2S数据输入 |
+| **MAX98357A功放** | | | |
+| | GPIO3 | BCLK | I2S位时钟（共用） |
+| | GPIO2 | LRC | I2S时钟（共用） |
+| | GPIO13 | DIN | I2S数据输出 |
+| **SG90舵机** | GPIO9 | 信号线 | PWM控制 (50Hz) |
+| **WS2812灯带** | GPIO19 | DIN | 数据输入 |
+| **按钮1** | GPIO0 | - | WiFi配网/蓝牙 |
+| **按钮2** | GPIO1 | - | 打断对话 |
+| **按钮3** | GPIO12 | - | 浇水功能 |
 
-👉 [Backend Operation Video Tutorial (Old Interface)](https://www.bilibili.com/video/BV1jUCUY2EKM/)
+### 电源要求
 
-## Related Open Source Projects
+- ESP32-C3: 3.3V
+- INMP441: 3.3V（不可接5V）
+- MAX98357A: 5V
+- SG90舵机: 5V
+- WS2812: 5V
 
-For server deployment on personal computers, refer to the following open-source projects:
+---
 
-- [xinnan-tech/xiaozhi-esp32-server](https://github.com/xinnan-tech/xiaozhi-esp32-server) Python server
-- [joey-zhou/xiaozhi-esp32-server-java](https://github.com/joey-zhou/xiaozhi-esp32-server-java) Java server
-- [AnimeAIChat/xiaozhi-server-go](https://github.com/AnimeAIChat/xiaozhi-server-go) Golang server
-- [hackers365/xiaozhi-esp32-server-golang](https://github.com/hackers365/xiaozhi-esp32-server-golang) Golang server
+## 编译与烧录
 
-Other client projects using the XiaoZhi communication protocol:
+### 环境要求
 
-- [huangjunsen0406/py-xiaozhi](https://github.com/huangjunsen0406/py-xiaozhi) Python client
-- [TOM88812/xiaozhi-android-client](https://github.com/TOM88812/xiaozhi-android-client) Android client
-- [100askTeam/xiaozhi-linux](http://github.com/100askTeam/xiaozhi-linux) Linux client by 100ask
-- [78/xiaozhi-sf32](https://github.com/78/xiaozhi-sf32) Bluetooth chip firmware by Sichuan
-- [QuecPython/solution-xiaozhiAI](https://github.com/QuecPython/solution-xiaozhiAI) QuecPython firmware by Quectel
+- ESP-IDF v5.4+
+- Python 3.8+
+- Git
 
-Custom Assets Tools:
+### 编译步骤
 
-- [78/xiaozhi-assets-generator](https://github.com/78/xiaozhi-assets-generator) Custom Assets Generator (Wake words, fonts, emojis, backgrounds)
+```bash
+# 克隆仓库
+git clone https://github.com/Re-Yslr/AI---ESP32C3.git
+cd AI---ESP32C3
 
-## About the Project
+# 设置目标芯片
+idf.py set-target esp32c3
 
-This is an open-source ESP32 project, released under the MIT license, allowing anyone to use it for free, including for commercial purposes.
+# 编译
+idf.py build
 
-We hope this project helps everyone understand AI hardware development and apply rapidly evolving large language models to real hardware devices.
+# 烧录
+idf.py -p COM端口 flash monitor
+```
 
-If you have any ideas or suggestions, please feel free to raise Issues or join our [Discord](https://discord.gg/bXqgAfRm) or QQ group: 994694848
+### 配网
 
-## Star History
+首次启动后，点击按钮1进入WiFi配网模式，或长按开启蓝牙配网。
 
-<a href="https://star-history.com/#78/xiaozhi-esp32&Date">
- <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=78/xiaozhi-esp32&type=Date&theme=dark" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=78/xiaozhi-esp32&type=Date" />
-   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=78/xiaozhi-esp32&type=Date" />
- </picture>
-</a> 
+---
+
+## 技术栈
+
+- **硬件**: ESP32-C3, INMP441, MAX98357A, SG90, WS2812
+- **框架**: xiaozhi-esp32 (MIT License)
+- **协议**: MCP (Model Context Protocol)
+- **音频**: I2S全双工, OPUS编解码
+- **AI后端**: 通义千问 / DeepSeek
+
+---
+
+## 致谢
+
+本项目基于 [xiaozhi-esp32](https://github.com/78/xiaozhi-esp32) 开源框架开发。
+
+- **Original Framework**: Shenzhen Xinzhi Future Technology Co., Ltd.
+- **Project Contributor**: [Re-Yslr](https://github.com/Re-Yslr)
+
+---
+
+## License
+
+MIT License - 详见 [LICENSE](LICENSE) 文件
